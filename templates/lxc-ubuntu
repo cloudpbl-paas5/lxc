@@ -90,6 +90,7 @@ configure_ubuntu()
     release=$3
     user=$4
     password=$5
+    ip_address=$6
 
     # configure the network using the dhcp
     cat <<EOF > $rootfs/etc/network/interfaces
@@ -101,7 +102,16 @@ auto lo
 iface lo inet loopback
 
 auto eth0
-iface eth0 inet dhcp
+iface eth0 inet static
+    address $ip_address
+    netmask 255.255.255.0
+    network 157.82.3.0
+    broadcast 157.82.3.255
+    gateway 157.82.3.1
+    dns-nameservers 133.11.169.11 157.82.3.2
+    dns-search exp.ci.i.u-tokyo.ac.jp
+
+iface etho0 inet6 auto
 EOF
 
     # set the hostname
@@ -623,6 +633,17 @@ EOF
     rm $rootfs/usr/sbin/policy-rc.d
 }
 
+copy_repo()
+{
+    rootfs=$1
+
+    rm -rf $rootfs/usr/share/nginx/html/*
+    cp -R /home/git/repositories/$gituser/$reponame.git/*  $rootfs/usr/share/nginx/html/
+    rm -rf $rootfs/usr/share/nginx/html/.git
+
+    return 0
+}
+
 do_bindhome()
 {
     rootfs=$1
@@ -794,6 +815,20 @@ if [ -z "$path" ]; then
     exit 1
 fi
 
+if [ -z "$ip_address" ]; then
+    echo "'ip_address' parameter is required"
+    exit 1
+fi
+
+if [ -z "$gituser" ]; then
+    echo "--gituser is required"
+    exit 1
+fi
+if [ -z "$reponame" ]; then
+    echo "--reponame is required"
+    exit 1
+fi
+
 if [ "$(id -u)" != "0" ]; then
     echo "This script should be run as 'root'"
     exit 1
@@ -816,7 +851,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-configure_ubuntu $rootfs $name $release $user $password
+configure_ubuntu $rootfs $name $release $user $password $ip_address
 if [ $? -ne 0 ]; then
     echo "failed to configure ubuntu $release for a container"
     exit 1
@@ -828,7 +863,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-post_process $rootfs $release $trim_container $packages
+post_process $rootfs $release $trim_container ${packages:-"nginx"}
+
+copy_repo $rootfs $gituser $reponame
 
 if [ -n "$bindhome" ]; then
     do_bindhome $rootfs $bindhome
