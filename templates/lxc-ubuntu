@@ -90,7 +90,7 @@ configure_ubuntu()
     release=$3
     user=$4
     password=$5
-    ip_address=$6
+    container_ip_address=$6
 
     # configure the network using the dhcp
     cat <<EOF > $rootfs/etc/network/interfaces
@@ -103,7 +103,7 @@ iface lo inet loopback
 
 auto eth0
 iface eth0 inet static
-    address $ip_address
+    address $container_ip_address
     netmask 255.255.255.0
     network 157.82.3.0
     broadcast 157.82.3.255
@@ -637,9 +637,12 @@ copy_repo()
 {
     rootfs=$1
 
-    rm -rf $rootfs/usr/share/nginx/html/*
-    cp -R /home/git/repositories/$gituser/$reponame.git/*  $rootfs/usr/share/nginx/html/
-    rm -rf $rootfs/usr/share/nginx/html/.git
+    rm -rf $rootfs/var/www/html/*
+    sudo -u gitreadonly git clone ssh://git@localhost/$username/$reponame.git /tmp/$username-$reponame
+    cp -R /tmp/$username-$reponame/*  $rootfs/var/www/html/
+    chown -R www-data:www-data $rootfs/var/www/html/
+    rm -rf $rootfs/var/www/html/.git
+    rm -rf /tmp/$username-$reponame
 
     return 0
 }
@@ -702,7 +705,7 @@ EOF
     return 0
 }
 
-options=$(getopt -o a:b:hp:r:v:n:FS:du: -l arch:,bindhome:,help,path:,release:,variant:,name:,flush-cache,auth-key:,debug,rootfs:,packages:,user:,password:,mirror:,security-mirror: -- "$@")
+options=$(getopt -o a:b:hp:r:v:n:FS:du: -l arch:,bindhome:,help,path:,release:,variant:,name:,flush-cache,auth-key:,debug,rootfs:,packages:,user:,password:,mirror:,username:,reponame:,container_ip_address:,db_ip_address:,dbpass:,security-mirror: -- "$@")
 if [ $? -ne 0 ]; then
     usage $(basename $0)
     exit 1
@@ -755,6 +758,11 @@ do
     -n|--name)      name=$2; shift 2;;
     -u|--user)      user=$2; shift 2;;
     --password)     password=$2; shift 2;;
+    --username)     username=$2; shift 2;;
+    --reponame)     reponame=$2; shift 2;;
+    --container_ip_address)     container_ip_address=$2; shift 2;;
+    --db_ip_address)     db_ip_address=$2; shift 2;;
+    --dbpass)     dbpass=$2; shift 2;;
     -F|--flush-cache) flushcache=1; shift 1;;
     -r|--release)   release=$2; shift 2;;
     -v|--variant)   variant=$2; shift 2;;
@@ -815,13 +823,13 @@ if [ -z "$path" ]; then
     exit 1
 fi
 
-if [ -z "$ip_address" ]; then
-    echo "'ip_address' parameter is required"
+if [ -z "$container_ip_address" ]; then
+    echo "'container_ip_address' parameter is required"
     exit 1
 fi
 
-if [ -z "$gituser" ]; then
-    echo "--gituser is required"
+if [ -z "$username" ]; then
+    echo "--username is required"
     exit 1
 fi
 if [ -z "$reponame" ]; then
@@ -851,7 +859,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-configure_ubuntu $rootfs $name $release $user $password $ip_address
+configure_ubuntu $rootfs $name $release $user $password $container_ip_address
 if [ $? -ne 0 ]; then
     echo "failed to configure ubuntu $release for a container"
     exit 1
@@ -865,7 +873,7 @@ fi
 
 post_process $rootfs $release $trim_container ${packages:-"nginx"}
 
-copy_repo $rootfs $gituser $reponame
+copy_repo $rootfs $username $reponame
 
 if [ -n "$bindhome" ]; then
     do_bindhome $rootfs $bindhome
