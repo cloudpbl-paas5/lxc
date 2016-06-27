@@ -636,15 +636,28 @@ EOF
 copy_repo()
 {
     rootfs=$1
+    username=$2
+    reponame=$3
 
-    rm -rf $rootfs/var/www/html/*
-    sudo -u gitreadonly git clone ssh://git@localhost/$username/$reponame /tmp/$username-$reponame
-    cp -R /tmp/$username-$reponame/*  $rootfs/var/www/html/
-    chown -R www-data:www-data $rootfs/var/www/html/
-    rm -rf $rootfs/var/www/html/.git
-    rm -rf /tmp/$username-$reponame
+    rm -rf $rootfs/home/ubuntu/rails
+    mkdir $rootfs/home/ubuntu/rails
+    sudo -u gitreadonly git clone ssh://git@localhost/$username/$reponame /tmp/$$-$username-$reponame
+    cp -R /tmp/$$-$username-$reponame/*  $rootfs/home/ubuntu/rails/
+    chown -R www-data:www-data $rootfs/home/ubuntu/rails/
+    rm -rf $rootfs/home/ubuntu/rails/.git
+    rm -rf /tmp/$$-$username-$reponame
 
     return 0
+}
+
+build_railsapp()
+{
+    rootfs=$1
+
+    # Install rails
+    chroot $rootfs gem install rails
+    # Build rails app
+    chroot $rootfs bash -c "cd /home/ubuntu/rails; bundle install"
 }
 
 do_bindhome()
@@ -871,9 +884,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-post_process $rootfs $release $trim_container ${packages:-"nginx"}
+post_process $rootfs $release $trim_container ${packages:-"ruby build-essential libz-dev ruby-dev libxml2-dev libsqlite3-dev nodejs libmysql-cil-dev libmysqld-dev libgmp3-dev libxslt-dev libssl-dev"}
 
 copy_repo $rootfs $username $reponame
+
+build_railsapp $rootfs
 
 if [ -n "$bindhome" ]; then
     do_bindhome $rootfs $bindhome
