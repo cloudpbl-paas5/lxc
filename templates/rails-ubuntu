@@ -657,11 +657,12 @@ build_railsapp()
     # Install rails
     chroot $rootfs gem install rails
     # Build rails app
-    chroot $rootfs bash -c "cd /home/ubuntu/rails; bundle install; rake db:migrate"
     cat <<EOF > $rootfs/home/ubuntu/run-rails
 #!/bin/bash
 
 cd /home/ubuntu/rails
+bundle install
+rake db:migrate
 rails s -b 0.0.0.0 -p 80
 EOF
     chmod +x $rootfs/home/ubuntu/run-rails
@@ -891,7 +892,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-post_process $rootfs $release $trim_container ${packages:-"ruby build-essential libz-dev ruby-dev libxml2-dev libsqlite3-dev nodejs libmysql-cil-dev libmysqld-dev libgmp3-dev libxslt-dev libssl-dev"}
+post_process $rootfs $release $trim_container ${packages:-"ruby build-essential libz-dev ruby-dev libxml2-dev libsqlite3-dev nodejs libmysqld-dev libgmp3-dev libxslt-dev libssl-dev"}
 
 copy_repo $rootfs $username $reponame
 
