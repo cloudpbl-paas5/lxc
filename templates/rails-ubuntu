@@ -661,8 +661,8 @@ build_railsapp()
 #!/bin/bash
 
 cd /home/ubuntu/rails
-bundle install
-rake db:migrate
+sudo -u ubuntu bundle install
+sudo -u ubuntu rake db:migrate
 rails s -b 0.0.0.0 -p 80
 EOF
     chmod +x $rootfs/home/ubuntu/run-rails
