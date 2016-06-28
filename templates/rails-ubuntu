@@ -641,7 +641,7 @@ copy_repo()
 
     rm -rf $rootfs/home/ubuntu/rails
     mkdir $rootfs/home/ubuntu/rails
-    sudo -u gitreadonly git clone ssh://git@localhost/$username/$reponame.git /tmp/$$-$username-$reponame
+    sudo -u gitreadonly git clone ssh://git@localhost/$username/$reponame /tmp/$$-$username-$reponame
     cp -R /tmp/$$-$username-$reponame/*  $rootfs/home/ubuntu/rails/
     chown -R www-data:www-data $rootfs/home/ubuntu/rails/
     rm -rf $rootfs/home/ubuntu/rails/.git
