@@ -657,7 +657,14 @@ build_railsapp()
     # Install rails
     chroot $rootfs gem install rails
     # Build rails app
-    chroot $rootfs bash -c "cd /home/ubuntu/rails; bundle install"
+    chroot $rootfs bash -c "cd /home/ubuntu/rails; bundle install; rake db:migrate"
+    cat <<EOF > $rootfs/home/ubuntu/run-rails
+#!/bin/bash
+
+cd /home/ubuntu/rails
+rails s -b 0.0.0.0 -p 80
+EOF
+    chmod +x $rootfs/home/ubuntu/run-rails
 }
 
 do_bindhome()
