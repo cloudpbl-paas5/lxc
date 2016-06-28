@@ -638,7 +638,7 @@ copy_repo()
     rootfs=$1
 
     rm -rf $rootfs/var/www/html/*
-    sudo -u gitreadonly git clone ssh://git@localhost/$username/$reponame /tmp/$username-$reponame
+    sudo -u gitreadonly git clone ssh://git@localhost/$username/$reponame.git /tmp/$username-$reponame
     cp -R /tmp/$username-$reponame/*  $rootfs/var/www/html/
     chown -R www-data:www-data $rootfs/var/www/html/
     rm -rf $rootfs/var/www/html/.git
