@@ -650,22 +650,39 @@ copy_repo()
     return 0
 }
 
-build_railsapp()
+configure_rails_env()
 {
     rootfs=$1
 
     # Install rails
-    chroot $rootfs gem install rails
+    chroot $rootfs gem install rails --no-ri --no-rdoc
     # Build rails app
     cat <<EOF > $rootfs/home/ubuntu/run-rails
 #!/bin/bash
 
 cd /home/ubuntu/rails
-sudo -u ubuntu bundle install
-sudo -u ubuntu rake db:migrate
+bundle install
+rake db:migrate
 rails s -b 0.0.0.0 -p 80
 EOF
     chmod +x $rootfs/home/ubuntu/run-rails
+
+    echo "gem: --no-rdoc --no-ri" > $rootfs/home/ubuntu/.gemrc
+    echo "gem: --no-rdoc --no-ri" > $rootfs/root/.gemrc
+
+    cat <<EOF > $rootfs/etc/systemd/system/railsapp.service
+Description=Cloud PaaS, run rails
+After=network.target auditd.service
+
+[Service]
+ExecStart=/home/ubuntu/run-rails
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    chroot $rootfs ln -s /etc/systemd/system/railsapp.service /etc/systemd/system/multi-user.target.wants/railsapp.service
 }
 
 do_bindhome()
@@ -896,7 +913,7 @@ post_process $rootfs $release $trim_container ${packages:-"ruby build-essential 
 
 copy_repo $rootfs $username $reponame
 
-build_railsapp $rootfs
+configure_rails_env $rootfs
 
 if [ -n "$bindhome" ]; then
     do_bindhome $rootfs $bindhome
