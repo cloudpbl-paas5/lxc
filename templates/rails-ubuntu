@@ -909,7 +909,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-post_process $rootfs $release $trim_container ${packages:-"ruby build-essential libz-dev ruby-dev libxml2-dev libsqlite3-dev nodejs libmysqld-dev libgmp3-dev libxslt-dev libssl-dev"}
+post_process $rootfs $release $trim_container ${packages:-"ruby build-essential libz-dev ruby-dev libxml2-dev libsqlite3-dev nodejs libmysqld-dev libgmp3-dev libxslt-dev libssl-dev libpq-dev"}
 
 copy_repo $rootfs $username $reponame
 
